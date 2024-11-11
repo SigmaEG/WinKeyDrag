@@ -3,14 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static HWINEVENTHOOK win_event_hook = NULL;
 static HHOOK mouse_hook = NULL;
 static HHOOK keyboard_hook = NULL;
 
-static HWND foreground_window = NULL;
-
-static BOOL dragging = FALSE;
 static BOOL win_down = FALSE;
+static BOOL dragging = FALSE;
 
 static INT last_x = 0;
 static INT last_y = 0;
@@ -61,7 +58,7 @@ static LRESULT CALLBACK mouse_hook_proc(
       CONST INT delta_x = x - last_x;
       CONST INT delta_y = y - last_y;
 
-      foreground_window = GetForegroundWindow();
+      HWND foreground_window = GetForegroundWindow();
 
       CONST DWORD dw_style = GetWindowLong(foreground_window, GWL_STYLE);
       CONST BOOL has_topbar =
@@ -69,11 +66,8 @@ static LRESULT CALLBACK mouse_hook_proc(
         (dw_style & WS_EX_TOPMOST) != 0 ||
         (dw_style & WS_EX_DLGMODALFRAME) != 0;
 
-      if (!has_topbar) {
-        foreground_window = NULL;
-
+      if (!has_topbar)
         return CallNextHookEx(NULL, n_code, w_param, l_param);
-      }
 
       if ((dw_style & WS_MAXIMIZE) == 0) {
         RECT rect = { 0 };
@@ -113,9 +107,6 @@ INT main(
   );
 
   if (keyboard_hook == NULL) {
-    UnhookWinEvent(win_event_hook);
-    win_event_hook = NULL;
-
     printf("Failed to register event hook for WH_KEYBOARD_LL\n");
 
     return -1;
@@ -131,9 +122,6 @@ INT main(
   if (mouse_hook == NULL) {
     UnhookWindowsHookEx(keyboard_hook);
     keyboard_hook = NULL;
-    
-    UnhookWinEvent(win_event_hook);
-    win_event_hook = NULL;
 
     printf("Failed to register event hook for WH_MOUSE_LL\n");
 
@@ -153,9 +141,6 @@ INT main(
 
   UnhookWindowsHookEx(keyboard_hook);
   keyboard_hook = NULL;
-  
-  UnhookWinEvent(win_event_hook);
-  win_event_hook = NULL;
 
   return 0;
 }
